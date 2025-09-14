@@ -13,15 +13,15 @@ def index():
 def save():
     data = request.json
     text = data.get("content", "")  # matches the key sent from editor.js
-    with open("saved_doc.txt", "w", encoding="utf-8") as f:
+    with open("./server/saved_doc.txt", "w", encoding="utf-8") as f:
         f.write(text)
     return jsonify({"status": "ok"})
 
 # Load endpoint
 @app.route("/load", methods=["GET"])
 def load():
-    if os.path.exists("saved_doc.txt"):
-        with open("saved_doc.txt", "r", encoding="utf-8") as f:
+    if os.path.exists("./server/saved_doc.txt"):
+        with open("./server/saved_doc.txt", "r", encoding="utf-8") as f:
             text = f.read()
     else:
         text = ""
@@ -29,3 +29,4 @@ def load():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
