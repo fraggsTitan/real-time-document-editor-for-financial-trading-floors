@@ -3,23 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Real-time Document Editor</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 30px; }
-    h1 { color: #333; }
-    textarea { width: 100%; height: 300px; font-family: monospace; font-size: 16px; margin-top: 10px; }
-    button { margin: 5px; padding: 8px 12px; font-size: 14px; }
-    .info { margin-top: 20px; }
-    .info div { margin-bottom: 5px; }
-    #cursorInfo { margin-top: 10px; font-weight: bold; }
-  </style>
+  <link rel="stylesheet" href="../static/index.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
   <h1>Real-time Document Editor</h1>
-
+  <div id="fileTree"></div>
   <textarea id="editor" placeholder="Start typing here..."></textarea>
 
-  <div>
+  <div id="btns">
     <button id="undoBtn">Undo (Piece Table)</button>
     <button id="redoBtn">Redo (Piece Table)</button>
     <button id="saveBtn">Save Document</button>

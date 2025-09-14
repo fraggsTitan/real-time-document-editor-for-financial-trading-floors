@@ -50,16 +50,22 @@ def get_dirs():
         try:
             for entry in os.listdir(path):
                 full_path = os.path.join(path, entry)
+                rel_path = os.path.relpath(full_path, SAVE_DIR)  # relative to SAVE_DIR
                 if os.path.isfile(full_path):
-                    items.append({"name": entry, "type": "file"})
+                    items.append({
+                        "name": entry,
+                        "type": "file",
+                        "path": rel_path
+                    })
                 elif os.path.isdir(full_path):
                     items.append({
                         "name": entry,
                         "type": "dir",
-                        "children": build_tree(full_path)  # recursive
+                        "path": rel_path,
+                        "children": build_tree(full_path)
                     })
         except PermissionError:
-            pass  # skip folders you cannot access
+            pass
         return items
 
     try:
@@ -67,7 +73,27 @@ def get_dirs():
         return jsonify({"status": "ok", "files": tree})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-    
+
+@app.route("/file-info")
+def file_info():
+    rel_path = request.args.get("path")
+    if not rel_path:
+        return jsonify({"status": "error", "message": "No file specified"}), 400
+
+    # Construct absolute path safely inside SAVE_DIR
+    abs_path = os.path.join(SAVE_DIR, rel_path)
+    abs_path = os.path.abspath(abs_path)
+
+    # Ensure the file is still inside SAVE_DIR (prevent path traversal)
+    if not abs_path.startswith(os.path.abspath(SAVE_DIR)) or not os.path.isfile(abs_path):
+        return jsonify({"status": "error", "message": "Invalid file path"}), 400
+
+    try:
+        with open(abs_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return jsonify({"status": "ok", "name": os.path.basename(abs_path), "content": content})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 # ----------------- Run -----------------
 if __name__ == "__main__":
     app.run(debug=True)
