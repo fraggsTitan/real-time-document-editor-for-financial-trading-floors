@@ -10,6 +10,7 @@
 
   <h1>Real-time Document Editor</h1>
   <div id="fileTree"></div>
+  <div id="fileName"></div>
   <textarea id="editor" placeholder="Start typing here..."></textarea>
 
   <div id="btns">
@@ -24,7 +25,6 @@
 
   <div class="info">
     <h3>Data Structure Usage:</h3>
-    <div>Gap Buffer → Fast cursor-based insertions</div>
     <div>Piece Table → Undo / Redo operations</div>
     <div>Rope → Efficient middle insertions & concurrent section edits</div>
   </div>

@@ -21,7 +21,7 @@ function renderFileContent(data) {
   rope = new Rope(content);
   pieceTable = new PieceTable(content);
   prevText = content;
-  
+  document.getElementById("fileName").innerHTML=`${data.path}`;
   editor.value = content;
   editor.selectionStart = editor.selectionEnd = content.length;
   

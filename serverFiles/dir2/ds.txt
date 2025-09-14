@@ -30,8 +30,7 @@ class GapBuffer {
 
   _moveLeft() {
     if (this.gapStart > 0) {
-      this.buffer[--this.gapEnd] = this.buffer[--this.gapStart];
-      this.cursor--;
+      this.buffer[--this
     }
   }
 

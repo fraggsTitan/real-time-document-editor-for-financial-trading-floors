@@ -1,45 +1,110 @@
+/* ------------------ Global ------------------ */
 body { 
     font-family: Arial, sans-serif; 
-    margin: 30px; 
+    margin: 30px;
+    background-color: #fafafa;  /* subtle off-white background */
+    color: #333;
 }
 
 h1 { 
-    color: #333; 
+    color: #222;
+    font-size: 24px;
+    margin-bottom: 15px;
 }
+
+/* ------------------ File Path ------------------ */
+#fileName {
+  font-family: "Segoe UI", Tahoma, Geneva, sans-serif;
+  font-size: 14px;
+  color: #555;
+  background-color: #f0f0f0;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+/* ------------------ Editor ------------------ */
 #editor { 
     width: 100%; 
     height: 300px; 
     font-family: monospace; 
     font-size: 16px; 
-    margin-top: 10px; 
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+    resize: vertical; /* allow resizing vertically only */
 }
+
+/* ------------------ Buttons ------------------ */
+#btns {
+    margin-top: 10px;
+}
+
 #btns>button { 
-    margin: 5px; 
-    padding: 8px 12px; 
+    margin: 5px 5px 5px 0; 
+    padding: 8px 14px; 
     font-size: 14px; 
+    border: 1px solid #2b5797;
+    border-radius: 4px;
+    background-color: #2b5797;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
 }
+
+#btns>button:hover {
+    background-color: #1e3f7a;
+    transform: translateY(-1px);
+}
+
+#btns>button:active {
+    transform: translateY(0);
+}
+
+/* ------------------ Info / Status ------------------ */
 .info { 
     margin-top: 20px; 
+    font-size: 13px;
+    line-height: 1.5;
+    color: #555;
 }
-.info div { 
-    margin-bottom: 5px; 
+
+.info h3 {
+    font-size: 15px;
+    margin-bottom: 6px;
 }
-#cursorInfo { 
+
+#cursorInfo, #dsStatus {
     margin-top: 10px; 
     font-weight: bold; 
+    font-size: 14px;
 }
+
+/* ------------------ File Tree ------------------ */
 #fileTree {
   font-family: "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: #333;
   user-select: none;
+  margin-bottom: 15px;
 }
 
+/* File tree icons and collapsible */
 #fileTree ul {
   list-style: none;
   margin: 0;
-  padding-left: 20px; /* indentation for children */
+  padding-left: 20px; 
 }
 
 #fileTree li {
@@ -48,7 +113,6 @@ h1 {
   cursor: pointer;
 }
 
-/* Directory labels */
 #fileTree li.directory > .label {
   font-weight: 600;
   color: #2b5797;
@@ -56,7 +120,6 @@ h1 {
   align-items: center;
 }
 
-/* File labels */
 #fileTree li.file > .label {
   font-style: italic;
   color: #444;
@@ -64,25 +127,23 @@ h1 {
   align-items: center;
 }
 
-/* Icon spacing */
 #fileTree .icon {
   margin-right: 6px;
 }
 
-* Collapsible container */
-/* Collapsible container */
 #fileTree .nested {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease;
-  visibility: hidden;   /* <— hide children when collapsed */
-  opacity: 0;           /* optional for fade effect */
+  visibility: hidden;
+  opacity: 0;
 }
 
 #fileTree .nested.open {
   visibility: visible;
   opacity: 1;
 }
+
 #fileTree .arrow {
   display: inline-block;
   margin-right: 6px;
@@ -93,8 +154,6 @@ h1 {
 #fileTree .arrow.open {
   transform: rotate(90deg);
 }
-
-
 
 
 
