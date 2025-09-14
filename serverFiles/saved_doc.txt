@@ -1,1 +1,1 @@
-hello there, this is a real time text editor
+Hello there
