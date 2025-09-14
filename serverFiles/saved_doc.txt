@@ -3,7 +3,7 @@ class GapBuffer {
     this.buffer = new Array(size).fill(null);
     this.gapStart = 0;
     this.gapEnd = size;
-    this.cursor = 0;
+    this.cursor = 0;//comment
   }
 
   _resize() {

@@ -26,6 +26,7 @@ function renderFileContent(data) {
   editor.selectionStart = editor.selectionEnd = content.length;
   
   currentFilePath = data.path || null;
+  console.log(currentFilePath);
   cursorInfo.textContent = `Viewing: ${data.name} - Cursor: ${content.length}`;
   dsStatus.innerText = `Loaded file: ${data.name}`;
   
@@ -33,21 +34,45 @@ function renderFileContent(data) {
 }
 
 // Save button
+// Save button
 saveBtn.addEventListener("click", async () => {
   const content = pieceTable.getText();
-  const saveEndpoint ="/save";
-  console.log(content);
+  
+  // Choose endpoint and payload based on whether we have a current file
+  let saveEndpoint, requestBody;
+  
+  if (currentFilePath) {
+    // Save to the specific file that's currently open
+    saveEndpoint = "/save-to-file";
+    requestBody = { 
+      content: content, 
+      path: currentFilePath 
+    };
+    console.log(`Saving to file: ${currentFilePath}`);
+  } else {
+    // Save to default saved_doc.txt
+    saveEndpoint = "/save";
+    requestBody = { content: content };
+    console.log("Saving to default file (saved_doc.txt)");
+  }
+  
   try {
     const res = await fetch(saveEndpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-    alert("Saved: " + (data.status || "ok"));
+    if (data.status === "ok") {
+      const fileName = currentFilePath ? currentFilePath : "saved_doc.txt";
+      alert(`Saved successfully to: ${fileName}`);
+      dsStatus.innerText = `Saved to: ${fileName}`;
+    } else {
+      alert("Save failed: " + data.message);
+    }
   } catch (err) {
     console.error("Save failed:", err);
     alert("Save failed: " + err.message);
