@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import os
-
+import shutil
 app = Flask(__name__)
 
 # File path for saved document
@@ -93,6 +93,89 @@ def save_to_file():
         
         with open(abs_path, "w", encoding="utf-8") as f:
             f.write(text)
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route("/create-directory", methods=["POST"])
+def create_directory():
+    data = request.json
+    dir_path = data.get("path")  # relative path inside SAVE_DIR
+    
+    if not dir_path:
+        return jsonify({"status": "error", "message": "No directory path specified"}), 400
+    
+    abs_path = os.path.abspath(os.path.join(SAVE_DIR, dir_path))
+    
+    # Security: Ensure directory is inside SAVE_DIR
+    if not abs_path.startswith(os.path.abspath(SAVE_DIR)):
+        return jsonify({"status": "error", "message": "Invalid directory path"}), 400
+    
+    try:
+        os.makedirs(abs_path, exist_ok=True)
+        return jsonify({"status": "ok", "message": f"Directory '{dir_path}' created"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ---------------- Create a new file ----------------
+# ---------------- Create a new file ----------------
+@app.route("/create-file", methods=["POST"])
+def create_file():
+    data = request.json
+    file_path = data.get("path")  # relative path including filename inside SAVE_DIR
+    
+    if not file_path:
+        return jsonify({"status": "error", "message": "No file path specified"}), 400
+    
+    abs_path = os.path.abspath(os.path.join(SAVE_DIR, file_path))
+    
+    # Security: Ensure file is inside SAVE_DIR
+    if not abs_path.startswith(os.path.abspath(SAVE_DIR)):
+        return jsonify({"status": "error", "message": "Invalid file path"}), 400
+    
+    try:
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)  # ensure directory exists
+        open(abs_path, "w", encoding="utf-8").close()  # create empty file
+        return jsonify({"status": "ok", "message": f"File '{file_path}' created"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
+
+@app.route("/delete", methods=["POST"])
+def delete_file_or_dir():
+    data = request.json
+    path = data.get("path")
+    abs_path = os.path.abspath(os.path.join(SAVE_DIR, path))
+    
+    # Security: prevent deleting outside root
+    if not abs_path.startswith(os.path.abspath(SAVE_DIR)):
+        return jsonify({"status": "error", "message": "Invalid path"}), 400
+
+    try:
+        if os.path.isfile(abs_path):
+            os.remove(abs_path)
+        elif os.path.isdir(abs_path):
+            shutil.rmtree(abs_path)  # <- deletes entire directory with contents
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route("/move", methods=["POST"])
+def move_file_or_dir():
+    data = request.json
+    path = data.get("path")
+    new_dir = data.get("newDir")
+    abs_path = os.path.abspath(os.path.join(SAVE_DIR, path))
+    new_abs_dir = os.path.abspath(os.path.join(SAVE_DIR, new_dir))
+    
+    if not abs_path.startswith(os.path.abspath(SAVE_DIR)) or not new_abs_dir.startswith(os.path.abspath(SAVE_DIR)):
+        return jsonify({"status": "error", "message": "Invalid path"}), 400
+
+    try:
+        os.makedirs(new_abs_dir, exist_ok=True)
+        os.rename(abs_path, os.path.join(new_abs_dir, os.path.basename(path)))
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

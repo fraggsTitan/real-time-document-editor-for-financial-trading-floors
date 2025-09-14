@@ -10,7 +10,14 @@ let pieceTable = new PieceTable(editor.value);
 let prevText = editor.value;
 let inputLocked = false; // prevents input loop during undo/redo
 let currentFilePath=null;
+const contextMenu = document.getElementById("contextMenu");
+let selectedItemPath = null;
+let selectedItemType = null;
 
+// Hide menu on click elsewhere
+document.addEventListener("click", () => {
+  contextMenu.style.display = "none";
+});
 // When opening a file, set currentFilePath
 function renderFileContent(data) {
   inputLocked = true; // Prevent input event from firing
@@ -189,11 +196,56 @@ async function loadDirectories() {
   try {
     const res = await fetch("/directories");
     const data = await res.json();
+    console.log(data);
     if (data.status === "ok") renderFileExplorer(data);
   } catch (err) {
     console.error(err);
   }
 }
+let currentDirPath = "";
+
+const createModal = document.getElementById("createModal");
+const createConfirm = document.getElementById("createConfirm");
+const createCancel = document.getElementById("createCancel");
+
+createCancel.addEventListener("click", () => {
+  createModal.style.display = "none";
+});
+
+createConfirm.addEventListener("click", () => {
+  const nameInput = document.getElementById("newName").value.trim();
+  if (!nameInput) return alert("Name cannot be empty!");
+
+  const type = document.querySelector('input[name="newType"]:checked').value;
+
+  let name = nameInput;
+  if (type === "file" && !name.includes(".")) name += ".txt";
+
+  // Normalize path: avoid double slashes
+  const newPath = currentDirPath ? currentDirPath + "/" + name : name;
+
+  const endpoint = type === "folder" ? "/create-directory" : "/create-file";
+
+  fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path: newPath })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "ok") {
+      createModal.style.display = "none";
+      loadDirectories(); // refresh file tree
+    } else {
+      alert(`Error: ${data.message}`);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Failed to create file/folder");
+  });
+});
+
 
 function renderTree(nodes, container) {
   const ul = document.createElement("ul");
@@ -247,7 +299,33 @@ function renderTree(nodes, container) {
           }, { once: true });
         }
       });
+      // Add right-click menu for folders
+      label.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
+        selectedItemPath = item.path;
+        selectedItemType = item.type;
+
+        contextMenu.style.top = e.pageY + "px";
+        contextMenu.style.left = e.pageX + "px";
+        contextMenu.style.display = "block";
+      });
+
+      //
+      const createBtn = document.createElement("button");
+        createBtn.textContent = "+";
+        createBtn.style.marginLeft = "5px";
+        createBtn.title = "Create file/folder";
+        label.appendChild(createBtn);
+
+        createBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          currentDirPath = item.path;
+          document.getElementById("newName").value = "";
+          createModal.style.display = "flex";
+        });
+      //
     } else {
       // file
       icon.textContent = "📄";
@@ -271,21 +349,94 @@ function renderTree(nodes, container) {
           dsStatus.innerText = `Error loading file: ${err.message}`;
         }
       });
+      label.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectedItemPath = item.path;
+        selectedItemType = item.type;
+
+        contextMenu.style.top = e.pageY + "px";
+        contextMenu.style.left = e.pageX + "px";
+        contextMenu.style.display = "block";
+      });
     }
 
     ul.appendChild(li);
   });
   container.appendChild(ul);
 }
+document.getElementById("ctxDelete").addEventListener("click", () => {
+  if (!selectedItemPath) return;
 
+  if (!confirm(`Are you sure you want to delete ${selectedItemPath}?`)) return;
+
+  fetch("/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path: selectedItemPath })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "ok") loadDirectories();
+    else alert(`Error: ${data.message}`);
+  })
+  .catch(err => console.error(err));
+
+  contextMenu.style.display = "none";
+});
+
+document.getElementById("ctxMove").addEventListener("click", () => {
+  if (!selectedItemPath) return;
+
+  const newDir = prompt("Enter new directory path (relative to root):");
+  if (!newDir) return;
+
+  fetch("/move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path: selectedItemPath, newDir })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "ok") loadDirectories();
+    else alert(`Error: ${data.message}`);
+  })
+  .catch(err => console.error(err));
+
+  contextMenu.style.display = "none";
+});
 function renderFileExplorer(data) {
   const container = document.getElementById("fileTree");
   container.innerHTML = "";
+
+  // --- Root label ---
   const rootLabel = document.createElement("div");
   rootLabel.className = "label";
   rootLabel.innerHTML = `<span class="icon">📦</span> Root`;
   container.appendChild(rootLabel);
+
+  // Add create button for root
+  const createBtn = document.createElement("button");
+  createBtn.textContent = "+";
+  createBtn.style.marginLeft = "5px";
+  createBtn.title = "Create file/folder in root";
+  rootLabel.appendChild(createBtn);
+
+  createBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    currentDirPath = ""; // treat root as empty string
+    document.getElementById("newName").value = "";
+    createModal.style.display = "flex";
+  });
+
+  // Render rest of the tree
   renderTree(data.files, container);
 }
 
 document.addEventListener("DOMContentLoaded", loadDirectories);
+// Modal buttons
+document.getElementById("createCancel").addEventListener("click", () => {
+  createModal.style.display = "none";
+});
+

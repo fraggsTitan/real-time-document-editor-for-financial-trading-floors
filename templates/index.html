@@ -28,7 +28,26 @@
     <div>Piece Table → Undo / Redo operations</div>
     <div>Rope → Efficient middle insertions & concurrent section edits</div>
   </div>
-
+  <div id="createModal" class="modal">
+  <div class="modal-content">
+      <h3>Create New</h3>
+      <input type="text" id="newName" placeholder="Enter name">
+      <div>
+        <label><input type="radio" name="newType" value="file" checked> File</label>
+        <label><input type="radio" name="newType" value="folder"> Folder</label>
+      </div>
+      <div class="modal-buttons">
+        <button id="createCancel">Cancel</button>
+        <button id="createConfirm">Create</button>
+      </div>
+    </div>
+  </div>
+  <div id="contextMenu" class="context-menu">
+    <ul>
+      <li id="ctxDelete">Delete</li>
+      <li id="ctxMove">Move</li>
+    </ul>
+  </div>
   <script type="module" src="/static/editor.js"></script>
 </body>
 </html>
