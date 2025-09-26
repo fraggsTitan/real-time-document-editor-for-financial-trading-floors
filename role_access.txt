@@ -1,3 +1,4 @@
+Install mongodb, establish a connection and create a database named doc_editor with tables/ collections as companies/documents/employees
 Control Flow:
 1. In login first company creates their instance, they then recieve a secure password which they share to their employees
 2. employees on signup give their details and also this company password to authorise that they are infact from that company
