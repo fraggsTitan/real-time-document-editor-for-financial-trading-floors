@@ -1,0 +1,21 @@
+Control Flow:
+1. In login first company creates their instance, they then recieve a secure password which they share to their employees
+2. employees on signup give their details and also this company password to authorise that they are infact from that company
+3. each company is also generated an admin who can see all files, the email will be like
+users_col.insert_one({
+    "name": name + " Admin",
+    "email": f"{name.lower().replace(' ','')}_admin@example.com",
+    "password_hash": password_hash,
+    "company_id": company_id,
+    "role": "admin"
+})
+eg admin login for company named mycompany:
+{
+  "email": "mycompany_admin@example.com",
+  "password": "the_password_from_signup"
+}
+the admin password is same as company password
+
+
+EG company: mycompany1 on creation i got password as b15a29ef
+employee: Person/person@mycompany1.com/Person

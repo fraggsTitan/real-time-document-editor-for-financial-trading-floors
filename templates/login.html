@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login / Sign-Up</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; }
+  body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #74ABE2, #5563DE);
+  }
+
+  .container {
+    background: #fff;
+    border-radius: 12px;
+    width: 400px;
+    padding: 2rem;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tab-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab-buttons button {
+    flex: 1;
+    margin: 0 0.25rem;
+    padding: 0.6rem 0;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    background: #f0f0f0;
+    transition: 0.3s;
+  }
+
+  .tab-buttons button.active {
+    background: #5563DE;
+    color: #fff;
+  }
+
+  form {
+    display: none;
+    flex-direction: column;
+    transition: all 0.5s ease;
+  }
+
+  form.active { display: flex; }
+
+  input {
+    margin: 0.5rem 0;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+  }
+
+  input::placeholder { color: #aaa; }
+
+  button[type="submit"] {
+    margin-top: 1rem;
+    background: #5563DE;
+    color: #fff;
+    border: none;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  button[type="submit"]:hover { background: #3741a3; }
+
+  .form-icon {
+    position: absolute;
+    font-size: 2rem;
+    top: -30px;
+    right: -30px;
+    opacity: 0.2;
+  }
+
+  #msg {
+    margin-top: 1rem;
+    text-align: center;
+    font-weight: 500;
+    color: #e74c3c;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Background icon -->
+  <i class="fas fa-file-alt form-icon"></i>
+
+  <div class="tab-buttons">
+    <button class="active" data-target="loginForm"><i class="fas fa-sign-in-alt"></i> Login</button>
+    <button data-target="companyForm"><i class="fas fa-building"></i> Company</button>
+    <button data-target="employeeForm"><i class="fas fa-user"></i> Employee</button>
+  </div>
+
+  <!-- Login Form -->
+  <form id="loginForm" class="active">
+    <input type="text" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button type="submit" id="loginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+  </form>
+
+  <!-- Company Sign-Up -->
+  <form id="companyForm">
+    <input type="text" id="companyName" placeholder="Company Name">
+    <button type="submit" id="companySignupBtn"><i class="fas fa-building"></i> Sign Up Company</button>
+  </form>
+
+  <!-- Employee Sign-Up -->
+  <form id="employeeForm">
+    <input type="text" id="employeeName" placeholder="Name">
+    <input type="email" id="employeeEmail" placeholder="Email">
+    <input type="password" id="employeePassword" placeholder="Password">
+    <input type="text" id="companyPassword" placeholder="Company Password">
+    <button type="submit" id="employeeSignupBtn"><i class="fas fa-user-plus"></i> Sign Up Employee</button>
+  </form>
+
+  <div id="msg"></div>
+</div>
+
+<script src="../static/login.js"></script>
+<script>
+  const tabs = document.querySelectorAll('.tab-buttons button');
+  const forms = document.querySelectorAll('form');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.target;
+      forms.forEach(f => f.id === target ? f.classList.add('active') : f.classList.remove('active'));
+      document.getElementById('msg').innerText = '';
+    });
+  });
+</script>
+</body>
+</html>

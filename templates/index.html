@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/default.min.css">
 </head>
 <body>
+  <button id="logoutBtn">Logout</button>
+
   <h1>Real-time Document Editor</h1>
   <div id="fileTree"></div>
   <div id="fileName"></div>
@@ -62,7 +64,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
-  
+  <script>
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      window.location.href = "/logout";
+    });
+  </script>
   <script type="module" src="/static/editor.js"></script>
 </body>
 </html>
