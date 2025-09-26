@@ -52,6 +52,7 @@ class GapBuffer {
     return this.buffer.slice(0, this.gapStart).join("") + this.buffer.slice(this.gapEnd).join("");
   }
 }
+
 // ---------------------- ADTs ----------------------
 class PieceTable {
   constructor(initial = "") {

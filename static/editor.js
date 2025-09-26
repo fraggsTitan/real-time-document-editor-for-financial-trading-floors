@@ -5,11 +5,34 @@ const cursorInfo = document.getElementById("cursorInfo");
 const dsStatus = document.getElementById("dsStatus");
 const saveBtn = document.getElementById("saveBtn");
 
-let rope = new Rope(editor.value);
-let pieceTable = new PieceTable(editor.value);
-let prevText = editor.value;
+// Initialize CodeMirror
+let codeMirror;
+
+// Initialize CodeMirror when DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
+  // Initialize CodeMirror with minimal config
+  codeMirror = CodeMirror.fromTextArea(editor, {
+    lineNumbers: true,
+    mode: "text/plain",
+    theme: "default",
+    lineWrapping: true
+  });
+  
+  // Set size for better visibility
+  codeMirror.setSize(null, "400px");
+  
+  // Setup CodeMirror event handlers
+  setupCodeMirrorEvents();
+  
+  // Load directories
+  loadDirectories();
+});
+
+let rope = new Rope(editor.value || "");
+let pieceTable = new PieceTable(editor.value || "");
+let prevText = editor.value || "";
 let inputLocked = false; // prevents input loop during undo/redo
-let currentFilePath=null;
+let currentFilePath = null;
 const contextMenu = document.getElementById("contextMenu");
 let selectedItemPath = null;
 let selectedItemType = null;
@@ -18,8 +41,63 @@ let selectedItemType = null;
 document.addEventListener("click", () => {
   contextMenu.style.display = "none";
 });
+
+function setupCodeMirrorEvents() {
+  // Handle text changes - hook into CodeMirror change events
+  codeMirror.on("beforeChange", (cm, change) => {
+    if (inputLocked) return; // CRITICAL: Skip processing when locked
+    
+    // Convert CodeMirror positions to absolute indices
+    const fromPos = cm.indexFromPos(change.from);
+    const toPos = cm.indexFromPos(change.to);
+    const currentText = cm.getValue();
+    
+    // Get the text that will be inserted
+    const insertedText = change.text.join("\n");
+    
+    if (change.origin === "+input" || change.origin === "paste" || change.origin === "+delete" || change.origin === "cut") {
+      // Handle deletion first if there's a selection being replaced
+      if (fromPos !== toPos) {
+        const deletedLen = toPos - fromPos;
+        
+        // Move cursors to after the deletion point and delete backwards
+        rope.moveCursor(toPos);
+        pieceTable.moveCursor(toPos);
+        rope.deleteAtCursor(deletedLen);
+        pieceTable.deleteAtCursor(deletedLen);
+        
+        dsStatus.innerText = `Deleted ${deletedLen} chars at pos ${fromPos}`;
+      }
+      
+      // Handle insertion if there's text to insert
+      if (insertedText && change.origin !== "+delete" && change.origin !== "cut") {
+        // Move cursors to insertion point and insert
+        rope.moveCursor(fromPos);
+        pieceTable.moveCursor(fromPos);
+        rope.insertAtCursor(insertedText);
+        pieceTable.insertAtCursor(insertedText);
+        
+        dsStatus.innerText = `Inserted: "${insertedText}" at pos ${fromPos}`;
+      }
+    }
+  });
+  
+  // Handle cursor position changes
+  codeMirror.on("cursorActivity", () => {
+    if (inputLocked) return;
+    const cursor = codeMirror.getCursor();
+    const pos = codeMirror.indexFromPos(cursor);
+    cursorInfo.innerText = `Cursor Position: ${pos}`;
+  });
+}
+
 // When opening a file, set currentFilePath
 function renderFileContent(data) {
+  if (!codeMirror) {
+    setTimeout(() => renderFileContent(data), 100);
+    return;
+  }
+  
   inputLocked = true; // Prevent input event from firing
   
   const content = data.content || "";
@@ -28,9 +106,14 @@ function renderFileContent(data) {
   rope = new Rope(content);
   pieceTable = new PieceTable(content);
   prevText = content;
-  document.getElementById("fileName").innerHTML=`${data.path}`;
-  editor.value = content;
-  editor.selectionStart = editor.selectionEnd = content.length;
+  document.getElementById("fileName").innerHTML = `${data.path}`;
+  
+  // Update CodeMirror content
+  codeMirror.setValue(content);
+  
+  // Set cursor to end
+  const endPos = codeMirror.posFromIndex(content.length);
+  codeMirror.setCursor(endPos);
   
   currentFilePath = data.path || null;
   console.log(currentFilePath);
@@ -40,7 +123,6 @@ function renderFileContent(data) {
   inputLocked = false;
 }
 
-// Save button
 // Save button
 saveBtn.addEventListener("click", async () => {
   const content = pieceTable.getText();
@@ -86,53 +168,13 @@ saveBtn.addEventListener("click", async () => {
   }
 });
 
-// ---------------- Typing Listener ----------------
-editor.addEventListener("input", () => {
-  if (inputLocked) return; // CRITICAL: Skip processing when locked
-  
-  const currentCursor = editor.selectionStart;
-  const currentText = editor.value;
-  const oldLen = prevText.length;
-  const newLen = currentText.length;
-
-  if (newLen > oldLen) {
-    // Insertion: figure out what was inserted and where
-    const insertedLen = newLen - oldLen;
-    const insertPos = currentCursor - insertedLen;
-    const insertedText = currentText.slice(insertPos, currentCursor);
-    
-    // Move cursors to insertion point and insert
-    rope.moveCursor(insertPos);
-    pieceTable.moveCursor(insertPos);
-    rope.insertAtCursor(insertedText);
-    pieceTable.insertAtCursor(insertedText);
-    
-    dsStatus.innerText = `Inserted: "${insertedText}" at pos ${insertPos}`;
-    
-  } else if (newLen < oldLen) {
-    // Deletion
-    const deletedLen = oldLen - newLen;
-    const deletePos = currentCursor;
-    
-    // Move cursors to after the deletion point and delete backwards
-    rope.moveCursor(deletePos + deletedLen);
-    pieceTable.moveCursor(deletePos + deletedLen);
-    rope.deleteAtCursor(deletedLen);
-    pieceTable.deleteAtCursor(deletedLen);
-    
-    dsStatus.innerText = `Deleted ${deletedLen} chars at pos ${deletePos}`;
-  }
-
-  // Update tracking
-  prevText = currentText;
-  cursorInfo.innerText = `Cursor Position: ${currentCursor}`;
-});
-
 // ---------------- Undo / Redo ----------------
 document.getElementById("undoBtn").addEventListener("click", () => {
+  if (!codeMirror) return;
+  
   inputLocked = true;
-  console.log(pieceTable)
-  console.log(rope)
+  console.log(pieceTable);
+  console.log(rope);
   console.log("Before undo - pieces:", pieceTable.pieces.length, "cursor:", pieceTable.cursor);
   console.log("Before undo - text:", pieceTable.getText());
   
@@ -146,10 +188,11 @@ document.getElementById("undoBtn").addEventListener("click", () => {
   // Rebuild rope to match piece table
   rope = new Rope(newText);
   
-  // Update textarea and cursor
-  editor.value = newText;
+  // Update CodeMirror content and cursor
+  codeMirror.setValue(newText);
   const cursorPos = Math.min(pieceTable.cursor, newText.length);
-  editor.selectionStart = editor.selectionEnd = cursorPos;
+  const cursorPosObj = codeMirror.posFromIndex(cursorPos);
+  codeMirror.setCursor(cursorPosObj);
   
   // Update tracking variables
   prevText = newText;
@@ -161,6 +204,8 @@ document.getElementById("undoBtn").addEventListener("click", () => {
 });
 
 document.getElementById("redoBtn").addEventListener("click", () => {
+  if (!codeMirror) return;
+  
   inputLocked = true;
   
   console.log("Before redo - pieces:", pieceTable.pieces.length, "cursor:", pieceTable.cursor);
@@ -176,10 +221,11 @@ document.getElementById("redoBtn").addEventListener("click", () => {
   // Rebuild rope to match piece table
   rope = new Rope(newText);
   
-  // Update textarea and cursor
-  editor.value = newText;
+  // Update CodeMirror content and cursor
+  codeMirror.setValue(newText);
   const cursorPos = Math.min(pieceTable.cursor, newText.length);
-  editor.selectionStart = editor.selectionEnd = cursorPos;
+  const cursorPosObj = codeMirror.posFromIndex(cursorPos);
+  codeMirror.setCursor(cursorPosObj);
   
   // Update tracking variables
   prevText = newText;
@@ -189,7 +235,6 @@ document.getElementById("redoBtn").addEventListener("click", () => {
   
   inputLocked = false;
 });
-
 
 // ---------------- File Explorer ----------------
 async function loadDirectories() {
@@ -202,6 +247,7 @@ async function loadDirectories() {
     console.error(err);
   }
 }
+
 let currentDirPath = "";
 
 const createModal = document.getElementById("createModal");
@@ -245,7 +291,6 @@ createConfirm.addEventListener("click", () => {
     alert("Failed to create file/folder");
   });
 });
-
 
 function renderTree(nodes, container) {
   const ul = document.createElement("ul");
@@ -366,6 +411,7 @@ function renderTree(nodes, container) {
   });
   container.appendChild(ul);
 }
+
 document.getElementById("ctxDelete").addEventListener("click", () => {
   if (!selectedItemPath) return;
 
@@ -406,6 +452,7 @@ document.getElementById("ctxMove").addEventListener("click", () => {
 
   contextMenu.style.display = "none";
 });
+
 function renderFileExplorer(data) {
   const container = document.getElementById("fileTree");
   container.innerHTML = "";
@@ -434,9 +481,7 @@ function renderFileExplorer(data) {
   renderTree(data.files, container);
 }
 
-document.addEventListener("DOMContentLoaded", loadDirectories);
 // Modal buttons
 document.getElementById("createCancel").addEventListener("click", () => {
   createModal.style.display = "none";
 });
-

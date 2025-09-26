@@ -5,13 +5,19 @@
   <title>Real-time Document Editor</title>
   <link rel="stylesheet" href="../static/index.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- CodeMirror CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/default.min.css">
 </head>
 <body>
-
   <h1>Real-time Document Editor</h1>
   <div id="fileTree"></div>
   <div id="fileName"></div>
-  <textarea id="editor" placeholder="Start typing here..."></textarea>
+  
+  <!-- Replace textarea with CodeMirror container -->
+  <div id="editor-container">
+    <textarea id="editor" placeholder="Start typing here..."></textarea>
+  </div>
 
   <div id="btns">
     <button id="undoBtn">Undo (Piece Table)</button>
@@ -19,17 +25,17 @@
     <button id="saveBtn">Save Document</button>
   </div>
 
-  <div id="cursorInfo">Cursor Position (Gap Buffer): 0</div>
+  <div id="cursorInfo">Cursor Position: 0</div>
   <div id="dsStatus">Current Operation: None</div>
-
-
+    
   <div class="info">
     <h3>Data Structure Usage:</h3>
     <div>Piece Table → Undo / Redo operations</div>
     <div>Rope → Efficient middle insertions & concurrent section edits</div>
   </div>
+  
   <div id="createModal" class="modal">
-  <div class="modal-content">
+    <div class="modal-content">
       <h3>Create New</h3>
       <input type="text" id="newName" placeholder="Enter name">
       <div>
@@ -42,12 +48,21 @@
       </div>
     </div>
   </div>
+  
   <div id="contextMenu" class="context-menu">
     <ul>
       <li id="ctxDelete">Delete</li>
       <li id="ctxMove">Move</li>
     </ul>
   </div>
+  
+  <!-- CodeMirror JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  
   <script type="module" src="/static/editor.js"></script>
 </body>
 </html>
