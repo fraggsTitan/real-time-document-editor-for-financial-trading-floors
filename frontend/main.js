@@ -43,8 +43,8 @@ let isRemoteChange = false;
 let isUndoRedoOperation = false;
 let collaborativeMode = false;
 let currentDocumentRoom = null;
-let isInitializing = false; // NEW: Prevent updates during initialization
-
+let isInitializing = false;
+let hasSyncedInitialContent = false; // NEW: Track if initial content has been set
 // Document state management - stores state per document
 let documentStates = new Map();
 
@@ -59,7 +59,8 @@ function createDocumentState(documentPath, content = "") {
     undoManager: null,
     collaborativeMode: false,
     roomName: `doc-${btoa(documentPath).replace(/[^a-zA-Z0-9]/g, '')}`,
-    isConnected: false
+    isConnected: false,
+    hasInitialContent: false // NEW: Track if this document has been initialized
   };
 }
 
@@ -78,7 +79,8 @@ function startCollaborativeSession(documentPath) {
   }
   
   currentDocumentRoom = docState.roomName;
-  isInitializing = true; // Prevent observer updates during setup
+  isInitializing = true;
+  hasSyncedInitialContent = false; // Reset sync flag
   
   // Initialize YJS for this document
   docState.ydoc = new Y.Doc();
@@ -96,11 +98,10 @@ function startCollaborativeSession(documentPath) {
   ytext = docState.ytext;
   undoManager = docState.undoManager;
   
-  // FIXED: Simplified YJS observer - remove overly restrictive conditions
+  // FIXED: Enhanced YJS observer with better duplication prevention
   ytext.observe(event => {
     console.log('YJS observer triggered:', event.changes);
     
-    // Only skip if we're in the middle of an undo/redo operation
     if (isUndoRedoOperation || isInitializing) {
       console.log('Skipping YJS update - operation in progress');
       return;
@@ -114,7 +115,7 @@ function startCollaborativeSession(documentPath) {
     // FIXED: Always update if content is different, regardless of other conditions
     if (newContent !== pieceTable.getText()) {
       updateLocalDataStructures(newContent);
-      updateCodeMirrorContent(newContent); // Use specific function for content updates
+      updateCodeMirrorContent(newContent);
       
       dsStatus.innerText = `📡 Collaborative update - length: ${newContent.length}`;
       const cursorPos = codeMirror.indexFromPos(codeMirror.getCursor());
@@ -124,44 +125,54 @@ function startCollaborativeSession(documentPath) {
     isRemoteChange = false;
   });
   
-  // Handle connection status
+  // FIXED: Better connection handling to prevent duplication
   provider.on('status', event => {
     console.log('Provider status:', event.status);
     
     if (event.status === 'connected') {
       docState.isConnected = true;
+      dsStatus.innerText = `🔗 Connected to: ${documentPath}`;
       
-      // FIXED: Better initial content synchronization
-      const currentContent = pieceTable.getText();
-      const yTextContent = ytext.toString();
-      
-      if (currentContent && yTextContent === '') {
-        // Local content exists, YJS is empty - populate YJS
-        console.log('Initializing YJS with local content');
-        ytext.insert(0, currentContent);
-      } else if (yTextContent && yTextContent !== currentContent) {
-        // YJS has different content - update local structures
-        console.log('Updating local structures with YJS content');
-        updateLocalDataStructures(yTextContent);
-        updateCodeMirrorContent(yTextContent);
-      }
-      
-      collaborativeMode = true;
-      docState.collaborativeMode = true;
-      isInitializing = false; // Enable observer after setup
-      dsStatus.innerText = `✅ Collaborative mode: ${documentPath}`;
-      
+      // Don't immediately sync content - wait for 'sync' event
     } else if (event.status === 'disconnected') {
       docState.isConnected = false;
       dsStatus.innerText = `❌ Disconnected from collaboration`;
     }
   });
   
+  // FIXED: Use 'sync' event for proper initial content synchronization
   provider.on('sync', isSynced => {
     console.log('Provider sync status:', isSynced);
-    if (isSynced) {
-      isInitializing = false;
-      dsStatus.innerText = `🔄 Synced: ${documentPath}`;
+    
+    if (isSynced && !hasSyncedInitialContent) {
+      console.log('Handling initial sync...');
+      
+      const currentContent = pieceTable.getText();
+      const yTextContent = ytext.toString();
+      
+      // FIXED: Only set content if YJS is truly empty (no existing content from other users)
+      if (yTextContent === '' && currentContent) {
+        // We're the first user - initialize YJS with local content
+        console.log('First user: Initializing YJS with local content');
+        ytext.insert(0, currentContent);
+        docState.hasInitialContent = true;
+      } else if (yTextContent !== '' && yTextContent !== currentContent) {
+        // Other users already have content - adopt their content
+        console.log('Adopting existing collaborative content');
+        updateLocalDataStructures(yTextContent);
+        updateCodeMirrorContent(yTextContent);
+        docState.hasInitialContent = true;
+      } else if (yTextContent === currentContent) {
+        // Content matches - we're already in sync
+        console.log('Content already synchronized');
+        docState.hasInitialContent = true;
+      }
+      
+      collaborativeMode = true;
+      docState.collaborativeMode = true;
+      hasSyncedInitialContent = true; // Mark as synced
+      isInitializing = false; // Enable observer after setup
+      dsStatus.innerText = `✅ Collaborative mode: ${documentPath}`;
     }
   });
   
@@ -185,7 +196,7 @@ function updateLocalDataStructures(newContent) {
   }
 }
 
-// FIXED: Separate function for CodeMirror content updates to prevent duplication
+// FIXED: Enhanced CodeMirror content update with better duplication checks
 function updateCodeMirrorContent(newContent) {
   if (!codeMirror) return;
   
@@ -198,13 +209,14 @@ function updateCodeMirrorContent(newContent) {
   console.log('Updating CodeMirror content');
   const cursorPos = codeMirror.indexFromPos(codeMirror.getCursor());
   
-  // FIXED: Use operation to ensure atomic updates and prevent event loops
+  // Use operation to ensure atomic updates and prevent event loops
   codeMirror.operation(() => {
     codeMirror.setValue(newContent);
     const newCursor = Math.min(cursorPos, newContent.length);
     codeMirror.setCursor(codeMirror.posFromIndex(newCursor));
   });
 }
+
 
 function stopCollaborativeSession() {
   console.log('Stopping collaborative session');
@@ -233,6 +245,7 @@ function stopCollaborativeSession() {
   isRemoteChange = false;
   isUndoRedoOperation = false;
   isInitializing = false;
+  hasSyncedInitialContent = false; // Reset sync flag
 }
 
 // Hide menu on click elsewhere
@@ -241,9 +254,9 @@ document.addEventListener("click", () => {
 });
 
 // ---------------------- ENHANCED EVENT HANDLERS ----------------------
+// FIXED: Enhanced event handlers with better local change detection
 function setupCodeMirrorEvents() {
   codeMirror.on("beforeChange", (cm, change) => {
-    // FIXED: Allow changes during remote updates, just track them properly
     if (inputLocked || isUndoRedoOperation) return;
 
     const fromPos = cm.indexFromPos(change.from);
@@ -254,8 +267,8 @@ function setupCodeMirrorEvents() {
 
     if (change.origin === "+input" || change.origin === "paste" || change.origin === "+delete" || change.origin === "cut") {
       
-      // FIXED: Only update YJS for local changes (not remote changes)
-      if (collaborativeMode && ytext && !isRemoteChange) {
+      // FIXED: Better collaborative vs local mode handling
+      if (collaborativeMode && ytext && !isRemoteChange && hasSyncedInitialContent) {
         console.log('Updating YJS from local change');
         
         // Use transaction to ensure atomicity
@@ -269,8 +282,8 @@ function setupCodeMirrorEvents() {
             ytext.insert(fromPos, insertedText);
           }
         });
-      } else if (!collaborativeMode) {
-        // Local-only mode: update piece table directly
+      } else if (!collaborativeMode || !hasSyncedInitialContent) {
+        // Local-only mode or still initializing: update piece table directly
         if (fromPos !== toPos) {
           const deletedLen = toPos - fromPos;
           rope.moveCursor(toPos);
