@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for,send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo import MongoClient
 import os, shutil, uuid
@@ -66,7 +66,9 @@ def index():
 @app.route("/login", methods=["GET"])
 def login_page():
     return render_template("login.html")
-
+@app.route('/node_modules/<path:filename>')
+def node_modules(filename):
+    return send_from_directory('node_modules', filename)
 # ---------- Logout ----------
 @app.route("/logout")
 def logout():

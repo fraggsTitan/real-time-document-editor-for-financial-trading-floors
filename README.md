@@ -11,3 +11,6 @@ Set up flask environment as follows:<br>
       pip install Flask<br>
     d. Exit venv: 
       deactivate<br>
+    For concurrent edits will need y.js
+    install with: npm install yjs y-websocket y-codemirror codemirror and then to run server for websocket handling: <br>
+    npx y-websocket-server --port 1234
